@@ -3,34 +3,24 @@ const config = require("../config/auth.config");
 const User = db.users;
 const Role = db.roles;
 const UserRole = db.user_role;
-
-const {
-  successResponse,
-  errorResponse
-} = require('../common/response');
-const Op = db.Sequelize.Op;
-
+const {successResponse,errorResponse} = require('../common/response');
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcryptjs");
-const logger = require("../../logs/logger.js");
 const nodemailer = require("nodemailer");
 require('dotenv').config();
-const {
-  saveUserValidations,
-} = require('../validations/validation');
+const { saveUserValidations} = require('../validations/validation');
 
 exports.signup = async (req, res) => {
   // Validate incoming request
   const { error } = saveUserValidations(req.body);
-  if (error) return res.status(400).send(errorResponse(error.details[0].message, {}));
+  if (error) return res.status(400).send(errorResponse(error.details[0].message));
 
   try {
     // Check if user already exists
     const existingUser = await User.findOne({ where: { email: req.body.email } });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json(errorResponse("User already exists"));
     }
-
     // Encrypt password
     const hashedPassword = bcrypt.hashSync(req.body.password, 8);
 
@@ -42,8 +32,6 @@ exports.signup = async (req, res) => {
     });
 
     if (user) {
-
-
       // Save role to user_role table
       const userRole = await UserRole.create({
         user_id: user.id,
@@ -65,26 +53,26 @@ exports.signup = async (req, res) => {
         { expiresIn: '24h' } // Token expiration time
       );
 
-      // Return successful response with relevant user details
-      return res.status(201).json({
-        data: {
-          user: {
-            data: {
-              displayName: user.username,
-              email: user.email,
-              photoURL: req.body.photoUrl || '', // Set a default or provided photo URL
-              role: rolename,
-              uid: user.id
-            },
+      // Format the response using the successResponse function
+      const responseData = {
+        user: {
+          data: {
+            displayName: user.username,
+            email: user.email,
+            photoURL: req.body.photoUrl || 'default-avatar-url', // Set a default or provided photo URL
+            role: rolename,
+            uid: user.id,
           },
-          access_token: accessToken // You'll need to generate this token as per your auth specifications
-        }
-      });
+        },
+        access_token: accessToken
+      };
+      // Return successful response with relevant user details
+      return res.json(successResponse(responseData));
     } else {
       throw new Error("Failed to create user.");
     }
   } catch (err) {
     // Handle potential errors
-    return res.status(500).json({ message: err.message });
+    return res.status(500).json(errorResponse(err.message));
   }
 };

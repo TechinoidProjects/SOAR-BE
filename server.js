@@ -13,11 +13,11 @@ const httpPort = process.env.HTTP_PORT;
 const httpsPort = process.env.HTTPS_PORT;
 
 // SSL Configration
-const httpsOptions = {
-  cert: fs.readFileSync('./ssl/falcon_messagepoint_tv.crt'),
-  ca: fs.readFileSync('./ssl/falcon_messagepoint_tv.ca-bundle'),
-  key: fs.readFileSync('./ssl/falcon_messagepoint_tv.key')
-};
+// const httpsOptions = {
+//   cert: fs.readFileSync('./ssl/falcon_messagepoint_tv.crt'),
+//   ca: fs.readFileSync('./ssl/falcon_messagepoint_tv.ca-bundle'),
+//   key: fs.readFileSync('./ssl/falcon_messagepoint_tv.key')
+// };
 
 const app = express();
 
@@ -54,7 +54,7 @@ Role.findAll().then(function (res) {
 require('./app/routes/auth.routes')(app);
 
 const httpServer = http.createServer(app);
-const httpsServer = https.createServer(httpsOptions, app);
+// const httpsServer = https.createServer(httpsOptions, app);
 
 const server1 = httpServer.listen(httpPort, hostname, function () {
   let host = server1.address().address
@@ -62,8 +62,8 @@ const server1 = httpServer.listen(httpPort, hostname, function () {
   console.log("App listening at http://%s:%s", host, port);
 });
 
-const server = httpsServer.listen(httpsPort, hostname, function () {
-   let host = server.address().address
-   let port = server.address().port
-   console.log("App listening at http://%s:%s", host, port);
- });
+// const server = httpsServer.listen(httpsPort, hostname, function () {
+//    let host = server.address().address
+//    let port = server.address().port
+//    console.log("App listening at http://%s:%s", host, port);
+//  });

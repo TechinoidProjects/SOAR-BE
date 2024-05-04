@@ -1,14 +1,14 @@
 const successResponse = (data) => {
      return {
-       'ResponseCode': 200,
+       'status': 200,
        'data': data
      };
    }
    
    const errorResponse = (message) => {
      return {
-       'ResponseCode': 400,
-       'Error': message
+       'status': 400,
+       'error': message
      };
    }
    
