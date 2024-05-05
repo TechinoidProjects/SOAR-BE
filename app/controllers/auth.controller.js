@@ -148,7 +148,7 @@ exports.signin = async (req, res) => {
           displayName: user.username,
           email: user.email,
           photoURL: user?.image_url || 'default-avatar-url', // Set a default or provided photo URL
-          is_first_login : isFirstLogin
+          // is_first_login : isFirstLogin
         },
         role: rolename,
         uid: user.id
