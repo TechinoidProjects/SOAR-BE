@@ -33,6 +33,10 @@ module.exports = function(sequelize, DataTypes) {
     image_url: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    is_first_login: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
     }
   }, {
     sequelize,

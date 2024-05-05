@@ -52,13 +52,14 @@ exports.signup = async (req, res) => {
       username: req.body.username,
       email: req.body.email,
       password: hashedPassword,
+      is_first_login : false
     });
 
     if (user) {
       // Save role to user_role table
       const userRole = await UserRole.create({
         user_id: user.id,
-        role_id: 2
+        role_id: 2,
       });
 
       // Assign role name based on role ID
@@ -133,6 +134,13 @@ exports.signin = async (req, res) => {
       { expiresIn: '24h' } // Token expiration time
     );
 
+    // Update is_first_login to false if it's true
+      let isFirstLogin = user?.is_first_login;
+      if (!isFirstLogin) {
+        await user.update({ is_first_login: true });
+        isFirstLogin = true;
+      }
+
     // Format the response using the successResponse function
     const responseData = {
       user: {
@@ -140,6 +148,7 @@ exports.signin = async (req, res) => {
           displayName: user.username,
           email: user.email,
           photoURL: user?.image_url || 'default-avatar-url', // Set a default or provided photo URL
+          is_first_login : isFirstLogin
         },
         role: rolename,
         uid: user.id
@@ -243,7 +252,7 @@ exports.updateProfile = async (req, res) => {
       return res.json(successResponse({
           user: {
               email: user?.email,
-              phone: user?.phone
+              phone: user?.phone_no
           },
           userInfo: {
               institutionName: userInfo?.institution_name,
