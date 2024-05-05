@@ -27,6 +27,7 @@ db.users = require("../models/users")(sequelize, Sequelize);
 db.user_info = require("../models/user_info.js")(sequelize, Sequelize);
 db.roles = require("../models/roles")(sequelize, DataTypes);
 db.user_role = require("../models/user_role")(sequelize, DataTypes);
+db.surgical_videos = require("../models/surgical_videos")(sequelize, DataTypes);
 
 db.roles.belongsToMany(db.users, { as: 'user_id_users', through: db.user_role, foreignKey: "role_id", otherKey: "user_id" });
 db.users.belongsToMany(db.roles, { as: 'role_id_roles', through: db.user_role, foreignKey: "user_id", otherKey: "role_id" });
@@ -36,5 +37,7 @@ db.user_info.belongsTo(db.users, { as: "user", foreignKey: "user_id"});
 db.users.hasMany(db.user_info, { as: "user_info", foreignKey: "user_id"});
 db.user_role.belongsTo(db.users, { as: "user", foreignKey: "user_id"});
 db.users.hasMany(db.user_role, { as: "user_roles", foreignKey: "user_id"});
+db.surgical_videos.belongsTo(db.users, { as: "user", foreignKey: "user_id"});
+db.users.hasMany(db.surgical_videos, { as: "surgical_videos", foreignKey: "user_id"});
 
 module.exports = db;

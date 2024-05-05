@@ -16,6 +16,8 @@ function initModels(sequelize) {
   users.belongsToMany(roles, { as: 'role_id_roles', through: user_role, foreignKey: "user_id", otherKey: "role_id" });
   user_role.belongsTo(roles, { as: "role", foreignKey: "role_id"});
   roles.hasMany(user_role, { as: "user_roles", foreignKey: "role_id"});
+  surgical_videos.belongsTo(users, { as: "user", foreignKey: "user_id"});
+  users.hasMany(surgical_videos, { as: "surgical_videos", foreignKey: "user_id"});
   user_info.belongsTo(users, { as: "user", foreignKey: "user_id"});
   users.hasMany(user_info, { as: "user_infos", foreignKey: "user_id"});
   user_role.belongsTo(users, { as: "user", foreignKey: "user_id"});

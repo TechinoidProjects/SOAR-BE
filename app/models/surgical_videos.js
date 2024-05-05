@@ -29,6 +29,22 @@ module.exports = function(sequelize, DataTypes) {
     surgeon_type: {
       type: DataTypes.STRING(255),
       allowNull: true
+    },
+    user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'users',
+        key: 'id'
+      }
+    },
+    ml_model_type: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      allowNull: true
+    },
+    video_url: {
+      type: DataTypes.TEXT,
+      allowNull: true
     }
   }, {
     sequelize,

@@ -6,6 +6,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 require('dotenv').config();
+const setupSwaggerDocs = require('./swaggerConfig');
 
 
 const hostname = (process.env.NODE_ENV == 'development') ? process.env.DEVELOPMENT_HOST : process.env.CLIENT_HOST;
@@ -28,8 +29,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 //app.use(expressValidator())
 app.use(bodyParser.json());
-
-
+setupSwaggerDocs(app, httpPort);
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({
   extended: true
@@ -52,6 +52,7 @@ Role.findAll().then(function (res) {
 
 // routes
 require('./app/routes/auth.routes')(app);
+require('./app/routes/surgical.routes')(app);
 
 const httpServer = http.createServer(app);
 // const httpsServer = https.createServer(httpsOptions, app);

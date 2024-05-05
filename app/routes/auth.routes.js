@@ -58,22 +58,4 @@ module.exports = function (app) {
         ],
         controller.uploadAvatar
         );
-  // app.get(
-  //   "/users/customer",
-  //   controller.signInWithToken
-  // );
-  //   app.get(
-  //   "/api/auth/getAllCustomers",
-  //   controller.getAllCustomers
-  // );
-
-  // app.put(
-  //   "/api/profile/update",
-  //   [authJwt.verifyToken],
-  //   controller.profileUpdate
-  // );
-
-  // app.post("/api/auth/signin", controller.signin);
-  // app.post("/api/auth/authuser", controller.authuser);
-  // app.post("/api/auth/impersonate", controller.impersonate);
 };
