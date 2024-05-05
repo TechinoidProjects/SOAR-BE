@@ -11,7 +11,7 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.STRING(100),
       allowNull: true
     },
-    date_perfomed: {
+    date_performed: {
       type: DataTypes.DATEONLY,
       allowNull: true
     },
