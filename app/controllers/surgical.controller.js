@@ -76,25 +76,13 @@ const storage = multer.diskStorage({
     });
   };
 
-
-
-
   // API to get surgical videos
   exports.get = async (req, res) => {
     try {
-        const user_id = req.userId;
-    
         const surgicalVideos = await SurgicalVideo.findAll({
-          where: { email: req.body.email } ,
-          include: [
-            {
-              model: db.users, // Assuming you have a 'users' model
-              attributes: ['id', 'username', 'email'],
-            },
-          ],
+          where: { user_id: req.userId }
         });
-    
-        return res.json(successResponse('Data uploaded successfully!'));
+        return res.json(successResponse(surgicalVideos));
       } catch (err) {
         return res.status(500).json(errorResponse(err.message));
       }

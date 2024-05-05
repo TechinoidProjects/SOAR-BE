@@ -39,12 +39,12 @@ module.exports = function(sequelize, DataTypes) {
         key: 'id'
       }
     },
-    ml_model_type: {
-      type: DataTypes.ARRAY(DataTypes.STRING),
-      allowNull: true
-    },
     video_url: {
       type: DataTypes.TEXT,
+      allowNull: true
+    },
+    ml_model_type: {
+      type: DataTypes.STRING(255),
       allowNull: true
     }
   }, {
