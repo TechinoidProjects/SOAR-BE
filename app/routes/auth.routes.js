@@ -17,7 +17,7 @@ module.exports = function (app) {
   app.post(
     "/api/auth/signup",
     [
-      authJwt.verifyToken
+      // authJwt.verifyToken
     ],
     controller.signup
   );

@@ -171,6 +171,12 @@ exports.signinWithToken = async (req, res) => {
       rolename = ['user'];
     }
 
+    const accessToken = jwt.sign(
+      { id: user.id, role: rolename },
+      '72ce6cd3-e9a8-4fb5-b49b-55e3744ae677', // Use a secure, environment-specific key
+      { expiresIn: '24h' } // Token expiration time
+    );
+
     // Format the response using the successResponse function
     const responseData = {
       user: {
@@ -181,7 +187,8 @@ exports.signinWithToken = async (req, res) => {
         },
         role: rolename,
         uid: user.id
-      }
+      },
+      access_token: accessToken
     };
 
     // Return successful response
