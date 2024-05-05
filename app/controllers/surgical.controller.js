@@ -62,11 +62,11 @@ const storage = multer.diskStorage({
           surgeon_name : nameOfSurgeon,
           date_performed : datePerformed,
           time : time,
-          duration,
+          duration : duration,
           procedure_type : typeOfProcedure,
           surgeon_type : typeOfSurgeon,
           ml_model_type : modelType,
-          video_url,
+          video_url : video_url,
         });
     // Return successful response
     return res.json(successResponse('Data uploaded successfully!'));
@@ -83,14 +83,9 @@ const storage = multer.diskStorage({
   exports.get = async (req, res) => {
     try {
         const user_id = req.userId;
-        let condition = {};
-    
-        if (user_id) {
-          condition.user_id = user_id;
-        }
     
         const surgicalVideos = await SurgicalVideo.findAll({
-          where: condition,
+          where: { email: req.body.email } ,
           include: [
             {
               model: db.users, // Assuming you have a 'users' model
