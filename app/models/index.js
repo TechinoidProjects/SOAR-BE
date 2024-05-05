@@ -33,7 +33,7 @@ db.users.belongsToMany(db.roles, { as: 'role_id_roles', through: db.user_role, f
 db.user_role.belongsTo(db.roles, { as: "role", foreignKey: "role_id"});
 db.roles.hasMany(db.user_role, { as: "user_roles", foreignKey: "role_id"});
 db.user_info.belongsTo(db.users, { as: "user", foreignKey: "user_id"});
-db.users.hasMany(db.user_info, { as: "user_infos", foreignKey: "user_id"});
+db.users.hasMany(db.user_info, { as: "user_info", foreignKey: "user_id"});
 db.user_role.belongsTo(db.users, { as: "user", foreignKey: "user_id"});
 db.users.hasMany(db.user_role, { as: "user_roles", foreignKey: "user_id"});
 

@@ -29,6 +29,10 @@ module.exports = function(sequelize, DataTypes) {
     phone_no: {
       type: DataTypes.STRING(50),
       allowNull: true
+    },
+    image_url: {
+      type: DataTypes.TEXT,
+      allowNull: true
     }
   }, {
     sequelize,

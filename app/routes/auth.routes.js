@@ -41,7 +41,23 @@ module.exports = function (app) {
       authJwt.verifyToken
     ],
     controller.updateProfile
-    );
+    ); 
+
+    app.get(
+      "/api/auth/getProfileDetails", 
+      [
+        authJwt.verifyToken
+      ],
+      controller.getProfileDetails
+      ); 
+
+      app.post(
+        "/api/auth/uploadImage", 
+        [
+          authJwt.verifyToken
+        ],
+        controller.uploadAvatar
+        );
   // app.get(
   //   "/users/customer",
   //   controller.signInWithToken

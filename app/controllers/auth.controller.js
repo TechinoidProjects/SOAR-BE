@@ -8,8 +8,30 @@ const {successResponse,errorResponse} = require('../common/response');
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
-require('dotenv').config();
 const { saveUserValidations} = require('../validations/validation');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+require('dotenv').config();
+
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir);
+    }
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    const userId = req.userId;
+    const ext = path.extname(file.originalname);
+    cb(null, `avatar-${userId}${ext}`);
+  }
+});
+
+const upload = multer({ storage });
+
 
 exports.signup = async (req, res) => {
   // Validate incoming request
@@ -60,7 +82,7 @@ exports.signup = async (req, res) => {
           data: {
             displayName: user.username,
             email: user.email,
-            photoURL: req.body.photoUrl || 'default-avatar-url', // Set a default or provided photo URL
+            photoURL: user?.image_url || 'default-avatar-url', // Set a default or provided photo URL
           },
           role: rolename,
           uid: user.id
@@ -117,7 +139,7 @@ exports.signin = async (req, res) => {
         data: {
           displayName: user.username,
           email: user.email,
-          photoURL: req.body.photoUrl || 'default-avatar-url', // Set a default or provided photo URL
+          photoURL: user?.image_url || 'default-avatar-url', // Set a default or provided photo URL
         },
         role: rolename,
         uid: user.id
@@ -155,7 +177,7 @@ exports.signinWithToken = async (req, res) => {
         data: {
           displayName: user.username,
           email: user.email,
-          photoURL: user.photoUrl || 'default-avatar-url', // Set a default or provided photo URL
+          photoURL: user?.image_url || 'default-avatar-url', // Set a default or provided photo URL
         },
         role: rolename,
         uid: user.id
@@ -183,8 +205,8 @@ exports.updateProfile = async (req, res) => {
       }
 
       // Update user's email and phone
-      user.email = email || user.email;
-      user.phone_no = mobileNumber || user.mobileNumber;
+      user.email = email || user?.email;
+      user.phone_no = mobileNumber || user?.mobileNumber;
       await user.save();
 
       // Check if the user's additional info already exists
@@ -202,26 +224,26 @@ exports.updateProfile = async (req, res) => {
           });
       } else {
           // Update existing user_info fields
-          userInfo.institutionName = institutionName || userInfo.institutionName;
-          userInfo.surgicalExperienceLevel = surgicalExperienceLevel || userInfo.surgicalExperienceLevel;
-          userInfo.yearOfClinicalResidency = yearOfClinicalResidency || userInfo.yearOfClinicalResidency;
-          userInfo.yearsOfClinicalExperience = yearsOfClinicalExperience || userInfo.yearsOfClinicalExperience;
-          userInfo.surgicalSubSpeciality = surgicalSubSpeciality || userInfo.surgicalSubSpeciality;
+          userInfo.institution_name = institutionName;
+          userInfo.surgical_experience_level = surgicalExperienceLevel;
+          userInfo.year_of_clinical_residency = yearOfClinicalResidency;
+          userInfo.years_of_clinical_experience = yearsOfClinicalExperience;
+          userInfo.surgical_sub_speciality = surgicalSubSpeciality;
           await userInfo.save();
       }
 
       // Return a success response with updated profile details
       return res.json(successResponse({
           user: {
-              email: user.email,
-              phone: user.phone
+              email: user?.email,
+              phone: user?.phone
           },
           userInfo: {
-              institutionName: userInfo.institutionName,
-              surgicalExperienceLevel: userInfo.surgicalExperienceLevel,
-              yearOfClinicalResidency: userInfo.yearOfClinicalResidency,
-              yearsOfClinicalExperience: userInfo.yearsOfClinicalExperience,
-              surgicalSubSpeciality: userInfo.surgicalSubSpeciality
+              institutionName: userInfo?.institution_name,
+              surgicalExperienceLevel: userInfo?.surgical_experience_level,
+              yearOfClinicalResidency: userInfo?.year_of_clinical_residency,
+              yearsOfClinicalExperience: userInfo?.years_of_clinical_experience,
+              surgicalSubSpeciality: userInfo?.surgical_sub_speciality
           }
       }));
 
@@ -230,3 +252,89 @@ exports.updateProfile = async (req, res) => {
       return res.status(500).json(errorResponse(err.message));
   }
 };
+
+exports.getProfileDetails = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    // Check if user exists
+    const user = await User.findByPk(userId, {
+      attributes: ['email', 'phone_no'],
+      include: [
+        {
+          model: UserInfo,
+          as: 'user_info',
+          attributes: [
+            'institution_name',
+            'surgical_experience_level',
+            'year_of_clinical_residency',
+            'years_of_clinical_experience',
+            'surgical_sub_speciality',
+          ],
+        },
+      ],
+    });
+
+    if (!user) {
+      return res.status(400).json(errorResponse('User not found'));
+    }
+
+    // Return a success response with user details
+    return res.json(
+      successResponse({
+        user: {
+          email: user.email,
+          phone: user.phone_no,
+        },
+        userInfo: {
+          institutionName: user.user_info[0]?.institution_name,
+          surgicalExperienceLevel: user.user_info[0]?.surgical_experience_level,
+          yearOfClinicalResidency: user.user_info[0]?.year_of_clinical_residency,
+          yearsOfClinicalExperience: user.user_info[0]?.years_of_clinical_experience,
+          surgicalSubSpeciality: user.user_info[0]?.surgical_sub_speciality,
+        },
+      })
+    );
+  } catch (err) {
+    return res.status(500).json(errorResponse(err.message));
+  }
+};
+
+const removeOldAvatar = (avatarPath) => {
+  if (avatarPath && fs.existsSync(avatarPath)) {
+    fs.unlinkSync(avatarPath);
+  }
+};
+
+exports.uploadAvatar = [
+  upload.single('avatar'),
+  async (req, res) => {
+    try {
+      const userId = req.userId;
+      const avatarPath = req.file ? `uploads/${req.file.filename}` : '';
+
+      // Update the user record in the database
+      const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(400).json(errorResponse('User not found.'));
+      }
+
+      const avatarFilePath = path.join(__dirname, '..', avatarPath);
+      const base64Data = fs.readFileSync(avatarFilePath, { encoding: 'base64' });
+
+      // Save the file path and base64 data in the database
+      user.avatar = avatarPath;
+      user.image_url = `data:image/${path.extname(req.file.originalname).replace('.', '')};base64,${base64Data}`;
+      await user.save();
+
+      const oldAvatarPath = path.join(__dirname, '..', avatarPath);
+      removeOldAvatar(oldAvatarPath);
+
+      return res.json(successResponse({ avatar: user?.image_url }));
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json(errorResponse('Error uploading avatar.'));
+    }
+  }
+];
+
