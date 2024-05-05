@@ -17,4 +17,12 @@ module.exports = function (app) {
     ],
     controller.save_surgical_videos
   );
+
+  app.get(
+    "/api/surgical/get",
+    [
+       authJwt.verifyToken
+    ],
+    controller.get
+  );
 };
