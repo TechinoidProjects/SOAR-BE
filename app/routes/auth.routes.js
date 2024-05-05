@@ -17,28 +17,31 @@ module.exports = function (app) {
   app.post(
     "/api/auth/signup",
     [
-      verifySignUp.checkRolesExisted
+      authJwt.verifyToken
     ],
     controller.signup
   );
   app.post(
     "/api/auth/signin",
     [
-      verifySignUp.checkRolesExisted
+      // authJwt.verifyToken
     ],
     controller.signin
   );
   app.get(
     "/api/auth/signinwithtoken",
     [
-      verifySignUp.checkRolesExisted
+      authJwt.verifyToken
     ],
     controller.signinWithToken
   );
-  // app.post(
-  //   "/api/auth/isAccountExists", 
-  //   controller.isAccountExists
-  //   );
+  app.post(
+    "/api/auth/updateProfile", 
+    [
+      authJwt.verifyToken
+    ],
+    controller.updateProfile
+    );
   // app.get(
   //   "/users/customer",
   //   controller.signInWithToken

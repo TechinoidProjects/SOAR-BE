@@ -3,6 +3,7 @@ const config = require("../config/auth.config");
 const User = db.users;
 const Role = db.roles;
 const UserRole = db.user_role;
+const UserInfo = db.user_info;
 const {successResponse,errorResponse} = require('../common/response');
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcryptjs");
@@ -133,17 +134,10 @@ exports.signin = async (req, res) => {
 };
 
 exports.signinWithToken = async (req, res) => {
-  // Retrieve the token from request headers
-  const token = req.headers['authorization'];
-  if (!token) return res.status(403).json(errorResponse("No token provided"));
-
   try {
-    // Verify the token
-    const tokenFinal = token.split(' ')[1];
-    const decoded = jwt.verify(tokenFinal, '72ce6cd3-e9a8-4fb5-b49b-55e3744ae677');
 
     // Retrieve user information
-    const user = await User.findByPk(decoded.id);
+    const user = await User.findByPk(req.userId);
     if (!user) return res.status(404).json(errorResponse("User not found"));
 
     // Retrieve user role
@@ -173,5 +167,66 @@ exports.signinWithToken = async (req, res) => {
   } catch (err) {
     // Handle potential errors
     return res.status(500).json(errorResponse(err.message));
+  }
+};
+
+
+exports.updateProfile = async (req, res) => {
+  try {
+      const userId  = req.userId;
+      const { email, mobileNumber, institutionName, surgicalExperienceLevel, yearOfClinicalResidency, yearsOfClinicalExperience, surgicalSubSpeciality } = req.body;
+
+      // Check if user exists
+      const user = await User.findByPk(userId);
+      if (!user) {
+          return res.status(400).json(errorResponse("User not found"));
+      }
+
+      // Update user's email and phone
+      user.email = email || user.email;
+      user.phone_no = mobileNumber || user.mobileNumber;
+      await user.save();
+
+      // Check if the user's additional info already exists
+      let userInfo = await UserInfo.findOne({ where: { user_id : userId } });
+
+      if (!userInfo) {
+          // Create new user_info if not existing
+          userInfo = await UserInfo.create({
+              user_id: userId,
+              institution_name: institutionName,
+              surgical_experience_level: surgicalExperienceLevel,
+              year_of_clinical_residency: yearOfClinicalResidency,
+              years_of_clinical_experience: yearsOfClinicalExperience,
+              surgical_sub_speciality: surgicalSubSpeciality
+          });
+      } else {
+          // Update existing user_info fields
+          userInfo.institutionName = institutionName || userInfo.institutionName;
+          userInfo.surgicalExperienceLevel = surgicalExperienceLevel || userInfo.surgicalExperienceLevel;
+          userInfo.yearOfClinicalResidency = yearOfClinicalResidency || userInfo.yearOfClinicalResidency;
+          userInfo.yearsOfClinicalExperience = yearsOfClinicalExperience || userInfo.yearsOfClinicalExperience;
+          userInfo.surgicalSubSpeciality = surgicalSubSpeciality || userInfo.surgicalSubSpeciality;
+          await userInfo.save();
+      }
+
+      // Return a success response with updated profile details
+      return res.json(successResponse({
+          user: {
+              email: user.email,
+              phone: user.phone
+          },
+          userInfo: {
+              institutionName: userInfo.institutionName,
+              surgicalExperienceLevel: userInfo.surgicalExperienceLevel,
+              yearOfClinicalResidency: userInfo.yearOfClinicalResidency,
+              yearsOfClinicalExperience: userInfo.yearsOfClinicalExperience,
+              surgicalSubSpeciality: userInfo.surgicalSubSpeciality
+          }
+      }));
+
+  } catch (err) {
+      // Handle errors using the errorResponse function
+      return res.status(500).json(errorResponse(err.message));
   }
 };
