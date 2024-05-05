@@ -135,11 +135,11 @@ exports.signin = async (req, res) => {
     );
 
     // Update is_first_login to false if it's true
-      let isFirstLogin = user?.is_first_login;
-      if (!isFirstLogin) {
-        await user.update({ is_first_login: true });
-        isFirstLogin = true;
-      }
+      // let isFirstLogin = user?.is_first_login;
+      // if (!isFirstLogin) {
+      //   await user.update({ is_first_login: true });
+      //   isFirstLogin = true;
+      // }
 
     // Format the response using the successResponse function
     const responseData = {
