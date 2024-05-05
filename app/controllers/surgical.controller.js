@@ -45,38 +45,62 @@ const storage = multer.diskStorage({
         return res.status(400).json({ success: false, message: err.message });
       }
       const {
-        surgeon_name,
-        date_performed,
+        nameOfSurgeon,
+        datePerformed,
         time,
         duration,
-        procedure_type,
-        surgeon_type,
-        ml_model_type,
+        typeOfProcedure,
+        typeOfSurgeon,
+        modelType,
       } = req.body;
   
       const video_url = req.file ? `uploads/${req.file.filename}` : null;
   
-      // Validate required fields
-      if (!surgeon_name || !date_performed || !procedure_type || !surgeon_type || !video_url) {
-        return res.status(400).json(errorResponse("Missing required fields"));
-      }
-  
       try {
         const surgicalVideo = await SurgicalVideo.create({
           user_id : req.userId,  
-          surgeon_name,
-          date_performed,
-          time,
+          surgeon_name : nameOfSurgeon,
+          date_performed : datePerformed,
+          time : time,
           duration,
-          procedure_type,
-          surgeon_type,
-          ml_model_type,
+          procedure_type : typeOfProcedure,
+          surgeon_type : typeOfSurgeon,
+          ml_model_type : modelType,
           video_url,
         });
     // Return successful response
-    return res.json(successResponse(surgicalVideo));
+    return res.json(successResponse('Data uploaded successfully!'));
       } catch (err) {
         return res.status(500).json(errorResponse(err.message));
       }
     });
+  };
+
+
+
+
+  // API to get surgical videos
+  exports.get = async (req, res) => {
+    try {
+        const user_id = req.userId;
+        let condition = {};
+    
+        if (user_id) {
+          condition.user_id = user_id;
+        }
+    
+        const surgicalVideos = await SurgicalVideo.findAll({
+          where: condition,
+          include: [
+            {
+              model: db.users, // Assuming you have a 'users' model
+              attributes: ['id', 'username', 'email'],
+            },
+          ],
+        });
+    
+        return res.json(successResponse('Data uploaded successfully!'));
+      } catch (err) {
+        return res.status(500).json(errorResponse(err.message));
+      }
   };
