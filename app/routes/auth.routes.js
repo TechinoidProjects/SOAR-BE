@@ -21,6 +21,20 @@ module.exports = function (app) {
     ],
     controller.signup
   );
+  app.post(
+    "/api/auth/signin",
+    [
+      verifySignUp.checkRolesExisted
+    ],
+    controller.signin
+  );
+  app.get(
+    "/api/auth/signinwithtoken",
+    [
+      verifySignUp.checkRolesExisted
+    ],
+    controller.signinWithToken
+  );
   // app.post(
   //   "/api/auth/isAccountExists", 
   //   controller.isAccountExists
