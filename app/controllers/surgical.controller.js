@@ -77,7 +77,7 @@ const storage = multer.diskStorage({
   };
 
   // API to get surgical videos
-  exports.get = async (req, res) => {
+  exports.get_surgical_videos = async (req, res) => {
     try {
         const surgicalVideos = await SurgicalVideo.findAll({
           where: { user_id: req.userId }

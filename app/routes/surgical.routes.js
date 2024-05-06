@@ -19,10 +19,10 @@ module.exports = function (app) {
   );
 
   app.get(
-    "/api/surgical/get",
+    "/api/surgical/get_surgical_videos",
     [
        authJwt.verifyToken
     ],
-    controller.get
+    controller.get_surgical_videos
   );
 };
