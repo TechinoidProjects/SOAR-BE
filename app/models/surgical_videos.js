@@ -7,10 +7,6 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: false,
       primaryKey: true
     },
-    surgeon_name: {
-      type: DataTypes.STRING(100),
-      allowNull: true
-    },
     date_performed: {
       type: DataTypes.DATEONLY,
       allowNull: true
@@ -24,10 +20,6 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true
     },
     procedure_type: {
-      type: DataTypes.STRING(255),
-      allowNull: true
-    },
-    surgeon_type: {
       type: DataTypes.STRING(255),
       allowNull: true
     },

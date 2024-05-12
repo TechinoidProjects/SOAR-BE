@@ -7,6 +7,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 require('dotenv').config();
 const setupSwaggerDocs = require('./swaggerConfig');
+const path = require('path');
 
 
 const hostname = (process.env.NODE_ENV == 'development') ? process.env.DEVELOPMENT_HOST : process.env.CLIENT_HOST;
@@ -26,6 +27,8 @@ const corsOptions = {
   origin: 'http://localhost:3000',
   optionsSuccessStatus: 200
 }
+app.use('/uploads', express.static(path.join(__dirname, 'app/uploads')));
+
 app.use(cors(corsOptions));
 //app.use(expressValidator())
 app.use(bodyParser.json());
