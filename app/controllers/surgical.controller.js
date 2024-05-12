@@ -65,6 +65,8 @@ const storage = multer.diskStorage({
         modelType,
       } = req.body;
   
+      const surgeonAll = surgeons ? JSON.parse(surgeons) : [];
+
       const file = req.file;
     
       // Read the file from local file system
@@ -95,8 +97,8 @@ const storage = multer.diskStorage({
         });
 
          // Save each surgeon's details
-         if (surgeons && surgeons.length) {
-          await Promise.all(surgeons.map(surgeon =>
+         if (surgeonAll && surgeonAll.length) {
+          await Promise.all(surgeonAll?.map(surgeon =>
               SurgicalVideoDetail.create({
                   surgical_video_id: surgicalVideo.id,
                   surgeon_name: surgeon.nameOfSurgeon,
