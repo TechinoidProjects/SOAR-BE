@@ -19,20 +19,36 @@ AWS.config.update({
 
 const s3 = new AWS.S3();
 
-// Configure multer to use S3 for storage
-const upload = multer({
-  storage: multerS3({
-      s3: s3,
-      bucket: 'soarbackend',
-      acl: 'public-read',
-      metadata: function (req, file, cb) {
-          cb(null, {fieldName: file.fieldname});
+// Multer setup for video uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadsDir = path.join(__dirname, '..', 'uploads');
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir);
+        }
+        cb(null, uploadsDir);
       },
-      key: function (req, file, cb) {
-          cb(null, Date.now().toString() + '-' + file.originalname)
+    filename: (req, file, cb) => {
+      // Remove spaces and replace them with hyphens
+      const fileName = Date.now() + '-' + file.originalname.replace(/\s+/g, '-');
+      cb(null, fileName);
+    },
+  });
+  
+  const upload = multer({
+    storage,
+    limits: {
+      fileSize: 100 * 1024 * 1024, // 100 MB
+    },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = ['video/mp4', 'video/avi', 'video.mov', 'video/mkv','video/quicktime'];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Invalid file type. Only video files are allowed.'));
       }
-  })
-}).single('video');
+    },
+  }).single('video_file');
   
   // API to save surgical videos
   exports.save_surgical_videos = async (req, res) => {
@@ -49,10 +65,24 @@ const upload = multer({
         modelType,
       } = req.body;
   
-      const video_url = req.file ? req.file.location : null;
-  
+      const file = req.file;
+    
+      // Read the file from local file system
+      const fileStream = fs.readFileSync(file.path);
+
+      // Setting up S3 upload parameters
+    const params = {
+      Bucket: 'soarbackend',
+      Key: `videos/${Date.now()}-${file.originalname}`,  // File name you want to save as in S3
+      Body: fileStream,
+      // ACL: 'public-read'
+  };
+
+   // Uploading files to the bucket
+ 
       try {
-        
+        const uploadVideo = await s3.upload(params).promise();
+        if(uploadVideo){
        // Save surgical video data
         const surgicalVideo = await SurgicalVideo.create({
           user_id : req.userId,  
@@ -61,7 +91,7 @@ const upload = multer({
           duration : duration,
           procedure_type : typeOfProcedure,
           ml_model_type : modelType,
-          video_url : video_url,
+          video_url : uploadVideo?.Location,
         });
 
          // Save each surgeon's details
@@ -77,6 +107,9 @@ const upload = multer({
 
     // Return successful response
     return res.json(successResponse('Data uploaded successfully!'));
+    }else{
+    return res.status(400).json(errorResponse("Video is not uploaded."));
+    }
       } catch (err) {
         return res.status(500).json(errorResponse(err.message));
       }
