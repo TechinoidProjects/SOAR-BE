@@ -121,9 +121,7 @@ const storage = multer.diskStorage({
   // API to get surgical videos
   exports.get_surgical_videos = async (req, res) => {
     try {
-        const surgicalVideos = await SurgicalVideo.findAll({
-          // where: { user_id: req.userId }
-        });
+        const surgicalVideos = await SurgicalVideo.findAll();
         return res.json(successResponse(surgicalVideos));
       } catch (err) {
         return res.status(500).json(errorResponse(err.message));
