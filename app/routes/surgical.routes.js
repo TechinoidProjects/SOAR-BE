@@ -18,11 +18,19 @@ module.exports = function (app) {
     controller.save_surgical_videos
   );
 
-  app.get(
-    "/api/surgical/get_surgical_videos",
+  app.post(
+    "/api/surgical/search_surgical_videos",
     [
        authJwt.verifyToken
     ],
-    controller.get_surgical_videos
+    controller.search_surgical_videos
+  );
+
+  app.get(
+    "/api/surgical/get_csv_data_ById/:id",
+    [
+       authJwt.verifyToken
+    ],
+    controller.get_csv_data_ById
   );
 };

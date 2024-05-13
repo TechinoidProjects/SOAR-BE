@@ -56,6 +56,7 @@ Role.findAll().then(function (res) {
 // routes
 require('./app/routes/auth.routes')(app);
 require('./app/routes/surgical.routes')(app);
+require('./app/routes/lookup.routes')(app);
 
 const httpServer = http.createServer(app);
 // const httpsServer = https.createServer(httpsOptions, app);

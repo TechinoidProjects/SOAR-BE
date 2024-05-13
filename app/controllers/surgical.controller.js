@@ -2,12 +2,15 @@ const db = require("../models");
 const config = require("../config/auth.config");
 const SurgicalVideo = db.surgical_videos;
 const SurgicalVideoDetail = db.surgical_videos_detail;
-const {successResponse,errorResponse} = require('../common/response');
+const User = db.users;
+const UserInfo = db.user_info;
+const VideoAnnotations = db.video_annotations;
+const { successResponse, errorResponse } = require('../common/response');
 const fs = require('fs');
 const path = require('path');
 const AWS = require('aws-sdk');
-const multerS3 = require('multer-s3');
 const multer = require('multer');
+const { QueryTypes } = require('sequelize');
 require('dotenv').config();
 
 // Configure AWS SDK
@@ -21,109 +24,228 @@ const s3 = new AWS.S3();
 
 // Multer setup for video uploads
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadsDir = path.join(__dirname, '..', 'uploads');
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir);
-        }
-        cb(null, uploadsDir);
-      },
-    filename: (req, file, cb) => {
-      // Remove spaces and replace them with hyphens
-      const fileName = Date.now() + '-' + file.originalname.replace(/\s+/g, '-');
-      cb(null, fileName);
-    },
-  });
-  
-  const upload = multer({
-    storage,
-    limits: {
-      fileSize: 100 * 1024 * 1024, // 100 MB
-    },
-    fileFilter: (req, file, cb) => {
-      const allowedTypes = ['video/mp4', 'video/avi', 'video.mov', 'video/mkv','video/quicktime'];
-      if (allowedTypes.includes(file.mimetype)) {
-        cb(null, true);
-      } else {
-        cb(new Error('Invalid file type. Only video files are allowed.'));
-      }
-    },
-  }).single('video_file');
-  
-  // API to save surgical videos
-  exports.save_surgical_videos = async (req, res) => {
-    upload(req, res, async (err) => {
-      if (err) {
-        return res.status(400).json({ success: false, message: err.message });
-      }
-      const {
-        surgeons,
-        datePerformed,
-        time,
-        duration,
-        typeOfProcedure,
-        modelType,
-      } = req.body;
-  
-      const surgeonAll = surgeons ? JSON.parse(surgeons) : [];
+  destination: (req, file, cb) => {
+    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir);
+    }
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    // Remove spaces and replace them with hyphens
+    const fileName = Date.now() + '-' + file.originalname.replace(/\s+/g, '-');
+    cb(null, fileName);
+  },
+});
 
-      const file = req.file;
-    
-      // Read the file from local file system
-      const fileStream = fs.readFileSync(file.path);
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100 MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['video/mp4', 'video/avi', 'video.mov', 'video/mkv', 'video/quicktime'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only video files are allowed.'));
+    }
+  },
+}).single('video_file');
 
-      // Setting up S3 upload parameters
+// API to save surgical videos
+exports.save_surgical_videos = async (req, res) => {
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    const {
+      surgeons,
+      datePerformed,
+      time,
+      duration,
+      typeOfProcedure,
+      modelType,
+    } = req.body;
+
+    const surgeonAll = surgeons ? JSON.parse(surgeons) : [];
+
+    const file = req.file;
+
+    // Read the file from local file system
+    const fileStream = fs.readFileSync(file.path);
+
+    // Setting up S3 upload parameters
     const params = {
       Bucket: 'soarbackend',
       Key: `videos/${Date.now()}-${file.originalname}`,  // File name you want to save as in S3
       Body: fileStream,
       // ACL: 'public-read'
-  };
+    };
 
-   // Uploading files to the bucket
- 
-      try {
-        const uploadVideo = await s3.upload(params).promise();
-        if(uploadVideo){
-       // Save surgical video data
+    // Uploading files to the bucket
+
+    try {
+      const uploadVideo = await s3.upload(params).promise();
+      if (uploadVideo) {
+        // Save surgical video data
         const surgicalVideo = await SurgicalVideo.create({
-          user_id : req.userId,  
-          date_performed : datePerformed,
-          time : time,
-          duration : duration,
-          procedure_type : typeOfProcedure,
-          ml_model_type : modelType,
-          video_url : uploadVideo?.Location,
+          user_id: req.userId,
+          date_performed: datePerformed,
+          time: time,
+          duration: duration,
+          procedure_type: typeOfProcedure,
+          ml_model_type: modelType,
+          video_url: uploadVideo?.Location,
         });
 
-         // Save each surgeon's details
-         if (surgeonAll && surgeonAll.length) {
+        // Save each surgeon's details
+        if (surgeonAll && surgeonAll.length) {
           await Promise.all(surgeonAll?.map(surgeon =>
-              SurgicalVideoDetail.create({
-                  surgical_video_id: surgicalVideo.id,
-                  surgeon_name: surgeon.nameOfSurgeon,
-                  surgeon_type: surgeon.typeOfSurgeon
-              })
+            SurgicalVideoDetail.create({
+              surgical_video_id: surgicalVideo.id,
+              surgeon_name: surgeon.nameOfSurgeon,
+              surgeon_type: surgeon.typeOfSurgeon
+            })
           ));
-      }
+        }
 
-    // Return successful response
-    return res.json(successResponse('Data uploaded successfully!'));
-    }else{
-    return res.status(400).json(errorResponse("Video is not uploaded."));
+        // Return successful response
+        return res.json(successResponse('Data uploaded successfully!'));
+      } else {
+        return res.status(400).json(errorResponse("Video is not uploaded."));
+      }
+    } catch (err) {
+      return res.status(500).json(errorResponse(err.message));
     }
-      } catch (err) {
-        return res.status(500).json(errorResponse(err.message));
-      }
-    });
-  };
+  });
+};
 
-  // API to get surgical videos
-  exports.get_surgical_videos = async (req, res) => {
-    try {
-        const surgicalVideos = await SurgicalVideo.findAll();
-        return res.json(successResponse(surgicalVideos));
-      } catch (err) {
-        return res.status(500).json(errorResponse(err.message));
-      }
-  };
+exports.search_surgical_videos = async (req, res) => {
+  const { surgeon, years_of_experience, durations, hospital, datePerformed, time_of_surgery,steps,errors,criterias,scores } = req.body;
+  // Check if any filters are provided
+  const isFiltered = surgeon || years_of_experience || durations || hospital || datePerformed || time_of_surgery || steps || errors || criterias || scores;
+  if (!isFiltered) {
+    // No filters provided, fetch default video list
+    const surgicalVideos = await SurgicalVideo.findAll({
+      include: [
+        {
+          model: User,
+          as: 'user',
+          include: [{
+            model: UserInfo,
+            as: 'user_infos', // Assuming 'user_infos' is correctly setup to fetch multiple or single UserInfo
+            attributes: ['institution_name']
+          }],
+          attributes: ['username'] // Only fetch username from User
+        },
+        {
+          model: SurgicalVideoDetail,
+          as: 'surgical_videos_details',
+          attributes: ['surgeon_name'] // Fetch surgeon name from SurgicalVideoDetail
+        }
+      ],
+      attributes: ['duration', 'time', 'video_url'], // Attributes from SurgicalVideo
+    });
+
+    // Enhance response with video_title and filtered attributes
+    const enhancedVideos = surgicalVideos.map(video => ({
+      video_title: 'Cystoscopy Video',
+      institution_name: video?.user?.user_infos[0]?.institution_name, // Accessing first UserInfo
+      surgeon_name: video.surgical_videos_details.map(detail => detail.surgeon_name).join(', '), // Joining all surgeon names
+      duration: video.duration,
+      time: video.time,
+      video_url: video.video_url
+    }));
+
+    return res.json(successResponse(enhancedVideos));
+  }
+  else {
+    // Prepare parameters for the stored procedure call
+    const params = [
+      `'${surgeon}'`,
+      `'${years_of_experience}'`,
+      durations ? `'${durations}'` : 'NULL',
+      `'${hospital}'`,
+      datePerformed ? `'${datePerformed}'` : 'NULL',
+      time_of_surgery ? `'${time_of_surgery}'` : 'NULL',
+      `'${steps}'`,
+      `'${errors}'`,
+      `'${criterias}'`,
+      scores ? `'${scores}'` : 'NULL',
+    ].join(',');
+
+    const query = `CALL get_surgical_videos(${params}, 'rs_resultone'); FETCH ALL FROM "rs_resultone";`;
+
+    db.sequelize.query(query, { type: db.sequelize.QueryTypes.SELECT })
+      .then(result => {
+        result.splice(0, 1);
+        return res.json(successResponse(result));
+      })
+      .catch(error => {
+        return res.status(500).json(errorResponse(error.message));
+      });
+  }
+};
+
+
+exports.get_csv_data_ById = async (req, res) => {
+  try {
+    const videoId = req.params.id;
+    const surgicalVideos = await SurgicalVideo.findAll({
+      include: [
+        {
+          model: User,
+          as: 'user',
+          include: [{
+            model: UserInfo,
+            as: 'user_infos', // Assuming 'user_infos' is correctly setup to fetch multiple or single UserInfo
+            attributes: ['institution_name']
+          }],
+          attributes: ['username'] // Only fetch username from User
+        },
+        {
+          model: SurgicalVideoDetail,
+          as: 'surgical_videos_details',
+          attributes: ['surgeon_name'] // Fetch surgeon name from SurgicalVideoDetail
+        },
+        {
+          model: VideoAnnotations,
+          as: 'video_annotations',
+        }
+      ],
+      attributes: ['duration', 'time', 'video_url'], // Attributes from SurgicalVideo
+      where: { id: videoId } 
+    });
+    // Enhance response with video_title and filtered attributes
+    const enhancedVideos = surgicalVideos.map(video => {
+      // Extracting steps separately
+      const steps = video.video_annotations
+        .filter(annotation => annotation.annotation_type === 'steps');
+    
+        const errors = video.video_annotations
+        .filter(annotation => annotation.annotation_type === 'errors');
+
+        const competency = video.video_annotations
+        .filter(annotation => annotation.annotation_type === null);
+        
+      // Combining error annotations and steps into csv_data
+      const csv_data = [{competency: competency}, { steps: steps }, {errors: errors}];
+    
+      return {
+        video_title: 'Cystoscopy Video',
+        institution_name: video?.user?.user_infos[0]?.institution_name,
+        surgeon_name: video.surgical_videos_details.map(detail => detail.surgeon_name).join(', '),
+        duration: video.duration,
+        time: video.time,
+        video_url: video.video_url,
+        csv_data: csv_data  
+      };
+    });
+    
+    return res.json(successResponse(enhancedVideos));
+    
+    } catch (err) {
+      return res.status(500).json(errorResponse(err.message));
+    }
+};
