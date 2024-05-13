@@ -217,6 +217,7 @@ exports.get_csv_data_ById = async (req, res) => {
       attributes: ['duration', 'time', 'video_url'], // Attributes from SurgicalVideo
       where: { id: videoId } 
     });
+    
     // Enhance response with video_title and filtered attributes
     const enhancedVideos = surgicalVideos.map(video => {
       // Extracting steps separately
@@ -239,11 +240,11 @@ exports.get_csv_data_ById = async (req, res) => {
         duration: video.duration,
         time: video.time,
         video_url: video.video_url,
-        csv_data: csv_data  
+        csv_data: csv_data
       };
     });
     
-    return res.json(successResponse(enhancedVideos));
+    return res.json(successResponse(...enhancedVideos));
     
     } catch (err) {
       return res.status(500).json(errorResponse(err.message));
