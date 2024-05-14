@@ -122,9 +122,9 @@ exports.save_surgical_videos = async (req, res) => {
 };
 
 exports.search_surgical_videos = async (req, res) => {
-  const { surgeon, years_of_experience, durations, hospital, datePerformed, time_of_surgery,steps,errors,criterias,scores } = req.body;
+  const { procedure_type, surgeon, years_of_experience, durations, hospital, datePerformed, time_of_surgery,steps,errors,criterias,scores } = req.body;
   // Check if any filters are provided
-  const isFiltered = surgeon || years_of_experience || durations || hospital || datePerformed || time_of_surgery || steps || errors || criterias || scores;
+  const isFiltered = procedure_type || surgeon || years_of_experience || durations || hospital || datePerformed || time_of_surgery || steps || errors || criterias || scores;
   if (!isFiltered) {
     // No filters provided, fetch default video list
     const surgicalVideos = await SurgicalVideo.findAll({
@@ -145,12 +145,13 @@ exports.search_surgical_videos = async (req, res) => {
           attributes: ['surgeon_name'] // Fetch surgeon name from SurgicalVideoDetail
         }
       ],
-      attributes: ['duration', 'time', 'video_url'], // Attributes from SurgicalVideo
+      attributes: ['id','duration', 'time', 'video_url','procedure_type'], // Attributes from SurgicalVideo
     });
 
     // Enhance response with video_title and filtered attributes
     const enhancedVideos = surgicalVideos.map(video => ({
-      video_title: 'Cystoscopy Video',
+      id: video.id,
+      video_title: video?.procedure_type,
       institution_name: video?.user?.user_infos[0]?.institution_name, // Accessing first UserInfo
       surgeon_name: video.surgical_videos_details.map(detail => detail.surgeon_name).join(', '), // Joining all surgeon names
       duration: video.duration,
@@ -163,6 +164,7 @@ exports.search_surgical_videos = async (req, res) => {
   else {
     // Prepare parameters for the stored procedure call
     const params = [
+      `'${procedure_type}'`,
       `'${surgeon}'`,
       `'${years_of_experience}'`,
       durations ? `'${durations}'` : 'NULL',
@@ -187,7 +189,6 @@ exports.search_surgical_videos = async (req, res) => {
       });
   }
 };
-
 
 exports.get_csv_data_ById = async (req, res) => {
   try {
@@ -214,7 +215,7 @@ exports.get_csv_data_ById = async (req, res) => {
           as: 'video_annotations',
         }
       ],
-      attributes: ['duration', 'time', 'video_url'], // Attributes from SurgicalVideo
+      attributes: ['id','duration', 'time', 'video_url'], // Attributes from SurgicalVideo
       where: { id: videoId } 
     });
     
@@ -234,6 +235,7 @@ exports.get_csv_data_ById = async (req, res) => {
       const csv_data = [{competency: competency}, { steps: steps }, {errors: errors}];
     
       return {
+        id: video.id,
         video_title: 'Cystoscopy Video',
         institution_name: video?.user?.user_infos[0]?.institution_name,
         surgeon_name: video.surgical_videos_details.map(detail => detail.surgeon_name).join(', '),

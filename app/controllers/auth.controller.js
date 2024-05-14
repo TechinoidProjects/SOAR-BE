@@ -279,7 +279,7 @@ exports.getProfileDetails = async (req, res) => {
       include: [
         {
           model: UserInfo,
-          as: 'user_info',
+          as: 'user_infos',
           attributes: [
             'institution_name',
             'surgical_experience_level',
@@ -303,11 +303,11 @@ exports.getProfileDetails = async (req, res) => {
           phone: user.phone_no,
         },
         userInfo: {
-          institutionName: user.user_info[0]?.institution_name,
-          surgicalExperienceLevel: user.user_info[0]?.surgical_experience_level,
-          yearOfClinicalResidency: user.user_info[0]?.year_of_clinical_residency,
-          yearsOfClinicalExperience: user.user_info[0]?.years_of_clinical_experience,
-          surgicalSubSpeciality: user.user_info[0]?.surgical_sub_speciality,
+          institutionName: user.user_infos[0]?.institution_name,
+          surgicalExperienceLevel: user.user_infos[0]?.surgical_experience_level,
+          yearOfClinicalResidency: user.user_infos[0]?.year_of_clinical_residency,
+          yearsOfClinicalExperience: user.user_infos[0]?.years_of_clinical_experience,
+          surgicalSubSpeciality: user.user_infos[0]?.surgical_sub_speciality,
         },
       })
     );

@@ -22,33 +22,33 @@ exports.getAllLookups = async (req, res) => {
     // Fetching distinct years of clinical experience
     const experiences = await UserInfo.findAll({
       attributes: [
-        ['id', 'id'],
+        [Sequelize.fn('min', Sequelize.col('id')), 'id'],
         ['years_of_clinical_experience', 'value']
       ],
-      group: ['years_of_clinical_experience', 'id'],
+      group: ['years_of_clinical_experience'],
       order: [['years_of_clinical_experience', 'ASC']]
     });
 
     // Fetching distinct surgeons
     const surgeonsData = await SurgicalVideoDetail.findAll({
       attributes: [
-        ['id', 'id'],
+      [Sequelize.fn('min', Sequelize.col('id')), 'id'],
         ['surgeon_name', 'value']
       ],
-      group: ['surgeon_name', 'id'],
+      group: ['surgeon_name'],
       order: [['surgeon_name', 'ASC']]
     });
 
    // Fetching distinct steps
    const stepData = await VideoAnnotations.findAll({
     attributes: [
-        ['id', 'id'],
+      [Sequelize.fn('min', Sequelize.col('id')), 'id'],
         ['label', 'value']
     ],
     where: {
         annotation_type: 'steps'  // Filtering to include only records where annotation_type is 'steps'
     },
-    group: ['label', 'id'],
+    group: ['label'],  // Group by label only to ensure distinct labels
     order: [['label', 'ASC']]
 });
     // Fetching distinct erros
