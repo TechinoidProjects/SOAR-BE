@@ -58,6 +58,10 @@ module.exports = function(sequelize, DataTypes) {
     score: {
       type: DataTypes.INTEGER,
       allowNull: true
+    },
+    label_processed: {
+      type: DataTypes.STRING(255),
+      allowNull: true
     }
   }, {
     sequelize,
