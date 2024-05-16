@@ -222,14 +222,9 @@ exports.get_csv_data_ById = async (req, res) => {
     // Enhance response with video_title and filtered attributes
     const enhancedVideos = surgicalVideos.map(video => {
       // Extracting steps separately
-      const steps = video.video_annotations
-        .filter(annotation => annotation.annotation_type === 'steps');
-    
-        const errors = video.video_annotations
-        .filter(annotation => annotation.annotation_type === 'errors');
-
-        const competency = video.video_annotations
-        .filter(annotation => annotation.annotation_type === null);
+      const steps = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === 'steps'));
+      const errors = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === 'errors'));
+      const competency = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === null));
         
       // Combining error annotations and steps into csv_data
       const csv_data = [{competency: competency}, { steps: steps }, {errors: errors}];
@@ -252,3 +247,40 @@ exports.get_csv_data_ById = async (req, res) => {
       return res.status(500).json(errorResponse(err.message));
     }
 };
+
+function processAnnotations(annotations) {
+  return annotations.map(annotation => {
+    if (!annotation.label_processed) {
+      annotation.label_processed = annotation.label; // Set label_processed to label if null
+    }
+    return annotation;
+  });
+}
+
+// function mergeErrors(errors) {
+//   const errorMap = new Map();
+
+//   errors.forEach(error => {
+//     if (errorMap.has(error.label)) {
+//       const existing = errorMap.get(error.label);
+//       existing.start_time = minTime(existing.start_time, error.start_time);
+//       existing.end_time = maxTime(existing.end_time, error.end_time);
+//     } else {
+//       errorMap.set(error.label, {
+//         ...error,
+//         start_time: error.start_time,
+//         end_time: error.end_time
+//       });
+//     }
+//   });
+
+//   return Array.from(errorMap.values());
+// }
+
+// function minTime(time1, time2) {
+//   return time1 < time2 ? time1 : time2;
+// }
+
+// function maxTime(time1, time2) {
+//   return time1 > time2 ? time1 : time2;
+// }
