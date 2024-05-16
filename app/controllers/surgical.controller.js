@@ -189,6 +189,22 @@ exports.search_surgical_videos = async (req, res) => {
       });
   }
 };
+function processAnnotations(annotations) {
+  const uniqueAnnotations = new Map();
+
+  annotations.forEach(annotation => {
+    if (!uniqueAnnotations.has(annotation.label)) {
+      // If label_processed is null, set it to label
+      if (!annotation.label_processed) {
+        annotation.label_processed = annotation.label;
+      }
+      uniqueAnnotations.set(annotation.label, annotation);
+    }
+  });
+
+  // Convert the map values back to an array
+  return Array.from(uniqueAnnotations.values());
+}
 
 exports.get_csv_data_ById = async (req, res) => {
   try {
@@ -200,35 +216,32 @@ exports.get_csv_data_ById = async (req, res) => {
           as: 'user',
           include: [{
             model: UserInfo,
-            as: 'user_infos', // Assuming 'user_infos' is correctly setup to fetch multiple or single UserInfo
+            as: 'user_infos',
             attributes: ['institution_name']
           }],
-          attributes: ['username'] // Only fetch username from User
+          attributes: ['username']
         },
         {
           model: SurgicalVideoDetail,
           as: 'surgical_videos_details',
-          attributes: ['surgeon_name'] // Fetch surgeon name from SurgicalVideoDetail
+          attributes: ['surgeon_name']
         },
         {
           model: VideoAnnotations,
           as: 'video_annotations',
         }
       ],
-      attributes: ['id','duration', 'time', 'video_url'], // Attributes from SurgicalVideo
-      where: { id: videoId } 
+      attributes: ['id', 'duration', 'time', 'video_url'],
+      where: { id: videoId }
     });
-    
-    // Enhance response with video_title and filtered attributes
+
     const enhancedVideos = surgicalVideos.map(video => {
-      // Extracting steps separately
       const steps = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === 'steps'));
       const errors = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === 'errors'));
       const competency = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === null));
-        
-      // Combining error annotations and steps into csv_data
+
       const csv_data = [{competency: competency}, { steps: steps }, {errors: errors}];
-    
+
       return {
         id: video.id,
         video_title: 'Cystoscopy Video',
@@ -240,22 +253,14 @@ exports.get_csv_data_ById = async (req, res) => {
         csv_data: csv_data
       };
     });
-    
-    return res.json(successResponse(...enhancedVideos));
-    
-    } catch (err) {
-      return res.status(500).json(errorResponse(err.message));
-    }
-};
 
-function processAnnotations(annotations) {
-  return annotations.map(annotation => {
-    if (!annotation.label_processed) {
-      annotation.label_processed = annotation.label; // Set label_processed to label if null
-    }
-    return annotation;
-  });
-}
+    return res.json({ success: true, data: enhancedVideos });
+
+  } catch (err) {
+    console.error("Fetching surgical video data failed:", err);
+    return res.status(500).json({ error: err.message || "Internal Server Error" });
+  }
+};
 
 // function mergeErrors(errors) {
 //   const errorMap = new Map();
