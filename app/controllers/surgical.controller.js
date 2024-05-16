@@ -235,7 +235,7 @@ exports.get_csv_data_ById = async (req, res) => {
       where: { id: videoId }
     });
 
-    const enhancedVideos = surgicalVideos.map(video => {
+    const [enhancedVideos] = surgicalVideos.map(video => {
       const steps = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === 'steps'));
       const errors = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === 'errors'));
       const competency = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === null));
