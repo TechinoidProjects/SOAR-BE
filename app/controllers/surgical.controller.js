@@ -189,15 +189,21 @@ exports.search_surgical_videos = async (req, res) => {
       });
   }
 };
-function processAnnotations(annotations) {
+
+
+function processAnnotations(annotations, filterLabel = null) {
   const uniqueAnnotations = new Map();
 
   annotations.forEach(annotation => {
+    // If label_processed is null, set it to label
+    if (!annotation.label_processed) {
+      annotation.label_processed = annotation.label;
+    }
+    // Check if we should filter this label and if it matches the filter criteria
+    if (filterLabel && annotation.label_processed === filterLabel) {
+      return; // Skip this annotation
+    }
     if (!uniqueAnnotations.has(annotation.label)) {
-      // If label_processed is null, set it to label
-      if (!annotation.label_processed) {
-        annotation.label_processed = annotation.label;
-      }
       uniqueAnnotations.set(annotation.label, annotation);
     }
   });
@@ -205,6 +211,7 @@ function processAnnotations(annotations) {
   // Convert the map values back to an array
   return Array.from(uniqueAnnotations.values());
 }
+
 
 exports.get_csv_data_ById = async (req, res) => {
   try {
@@ -237,7 +244,7 @@ exports.get_csv_data_ById = async (req, res) => {
 
     const [enhancedVideos] = surgicalVideos.map(video => {
       const steps = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === 'steps'));
-      const errors = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === 'errors'));
+      const errors = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === 'errors'), "Instrument tip out of view");
       const competency = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === null));
 
       const csv_data = [{competency: competency}, { steps: steps }, {errors: errors}];
