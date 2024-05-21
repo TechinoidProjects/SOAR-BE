@@ -269,30 +269,78 @@ exports.get_csv_data_ById = async (req, res) => {
   }
 };
 
-// function mergeErrors(errors) {
-//   const errorMap = new Map();
 
-//   errors.forEach(error => {
-//     if (errorMap.has(error.label)) {
-//       const existing = errorMap.get(error.label);
-//       existing.start_time = minTime(existing.start_time, error.start_time);
-//       existing.end_time = maxTime(existing.end_time, error.end_time);
-//     } else {
-//       errorMap.set(error.label, {
-//         ...error,
-//         start_time: error.start_time,
-//         end_time: error.end_time
-//       });
-//     }
-//   });
+exports.search_surgical_videos_by_userId = async (req, res) => {
+  
+  const userId = req.userId;
 
-//   return Array.from(errorMap.values());
-// }
+  const { procedure_type, surgeon, years_of_experience, durations, hospital, datePerformed, time_of_surgery,steps,errors,criterias,scores } = req.body;
+  // Check if any filters are provided
+  const isFiltered = procedure_type || surgeon || years_of_experience || durations || hospital || datePerformed || time_of_surgery || steps || errors || criterias || scores;
+  if (!isFiltered) {
+    // No filters provided, fetch default video list
+    const surgicalVideos = await SurgicalVideo.findAll({
+      include: [
+        {
+          model: User,
+          as: 'user',
+          include: [{
+            model: UserInfo,
+            as: 'user_infos', // Assuming 'user_infos' is correctly setup to fetch multiple or single UserInfo
+            attributes: ['institution_name']
+          }],
+          attributes: ['username'] // Only fetch username from User
+        },
+        {
+          model: SurgicalVideoDetail,
+          as: 'surgical_videos_details',
+          attributes: ['surgeon_name'] // Fetch surgeon name from SurgicalVideoDetail
+        }
+      ],
+      attributes: ['id','duration', 'time', 'video_url','procedure_type'], // Attributes from SurgicalVideo
+      where: { user_id: userId }
+    });
 
-// function minTime(time1, time2) {
-//   return time1 < time2 ? time1 : time2;
-// }
+    // Enhance response with video_title and filtered attributes
+    const enhancedVideos = surgicalVideos.map(video => ({
+      user_id : userId,
+      id: video.id,
+      video_title: video?.procedure_type,
+      institution_name: video?.user?.user_infos[0]?.institution_name, // Accessing first UserInfo
+      surgeon_name: video.surgical_videos_details.map(detail => detail.surgeon_name).join(', '), // Joining all surgeon names
+      duration: video.duration,
+      time: video.time,
+      video_url: video.video_url
+    }));
 
-// function maxTime(time1, time2) {
-//   return time1 > time2 ? time1 : time2;
-// }
+    return res.json(successResponse(enhancedVideos));
+  }
+  else {
+    // Prepare parameters for the stored procedure call
+    const params = [
+      `'${userId}'`,
+      `'${procedure_type}'`,
+      `'${surgeon}'`,
+      `'${years_of_experience}'`,
+      durations ? `'${durations}'` : 'NULL',
+      `'${hospital}'`,
+      datePerformed ? `'${datePerformed}'` : 'NULL',
+      time_of_surgery ? `'${time_of_surgery}'` : 'NULL',
+      `'${steps}'`,
+      `'${errors}'`,
+      `'${criterias}'`,
+      scores ? `'${scores}'` : 'NULL',
+    ].join(',');
+
+    const query = `CALL get_surgical_videos_by_userId(${params}, 'rs_resultone'); FETCH ALL FROM "rs_resultone";`;
+
+    db.sequelize.query(query, { type: db.sequelize.QueryTypes.SELECT })
+      .then(result => {
+        result.splice(0, 1);
+        return res.json(successResponse(result));
+      })
+      .catch(error => {
+        return res.status(500).json(errorResponse(error.message));
+      });
+  }
+};

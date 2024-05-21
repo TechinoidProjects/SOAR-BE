@@ -26,6 +26,14 @@ module.exports = function (app) {
     controller.search_surgical_videos
   );
 
+  app.post(
+    "/api/surgical/search_surgical_videos_by_userId",
+    [
+       authJwt.verifyToken
+    ],
+    controller.search_surgical_videos_by_userId
+  );
+
   app.get(
     "/api/surgical/get_csv_data_ById/:id",
     [
