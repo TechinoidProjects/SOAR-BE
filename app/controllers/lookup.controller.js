@@ -43,25 +43,32 @@ exports.getAllLookups = async (req, res) => {
    const stepData = await VideoAnnotations.findAll({
     attributes: [
       [Sequelize.fn('min', Sequelize.col('id')), 'id'],
-        ['label', 'value']
+        ['label_processed', 'value']
     ],
     where: {
-        annotation_type: 'steps'  // Filtering to include only records where annotation_type is 'steps'
+      annotation_type: 'steps',
+      label_processed: {
+        [Sequelize.Op.ne]: null  // Exclude rows where label_processed is null
+      }
     },
-    group: ['label'],  // Group by label only to ensure distinct labels
-    order: [['label', 'ASC']]
+    group: ['label_processed'],  // Group by label only to ensure distinct labels
+    order: [['label_processed', 'ASC']]
 });
     // Fetching distinct erros
     const errorData = await VideoAnnotations.findAll({
       attributes: [
           [Sequelize.fn('min', Sequelize.col('id')), 'id'],  // Use an aggregate function to get a single ID per label
-          ['label', 'value']
+          ['label_processed', 'value']
       ],
       where: {
-          annotation_type: 'errors'  // Filtering to include only records where annotation_type is 'errors'
+        annotation_type: 'errors',
+        label_processed: {
+          [Sequelize.Op.not]: null,  // Exclude rows where label_processed is null
+          [Sequelize.Op.ne]: "Instrument tip out of view"  // Exclude rows where label_processed is "Instrument tip out of view"
+        }
       },
-      group: ['label'],  // Group by label only to ensure distinct labels
-      order: [['label', 'ASC']]
+      group: ['label_processed'],  // Group by label only to ensure distinct labels
+      order: [['label_processed', 'ASC']]
   });
   
     // Fetching distinct erros
