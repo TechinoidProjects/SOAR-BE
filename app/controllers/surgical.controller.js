@@ -209,9 +209,62 @@ function processAnnotations(annotations, filterLabel = null) {
   });
 
   // Convert the map values back to an array
-  return Array.from(uniqueAnnotations.values());
+  const processedAnnotations = Array.from(uniqueAnnotations.values());
+
+  processedAnnotations.forEach(annotation => {
+    const startTime = parseTime(annotation.start_time);
+    const endTime = parseTime(annotation.end_time);
+
+    // Check if startTime and endTime are valid dates
+    if (!startTime || !endTime) {
+      console.warn(`Invalid time format for annotation: ${JSON.stringify(annotation)}`);
+      return; // Skip this annotation
+    }
+
+    // Calculate duration in seconds
+    const duration = (endTime - startTime) / 1000;
+
+    // Check if duration is less than 10 seconds
+    if (duration < 10) {
+      // If less than 10 seconds, set duration to 10 seconds
+      annotation.end_time = addSecondsToTime(annotation.start_time, 10);
+    } else {
+      // If greater than or equal to 10 seconds, leave it as is
+      annotation.end_time = addSecondsToTime(annotation.start_time, duration);
+    }
+  });
+
+  return processedAnnotations;
 }
 
+function parseTime(timeString) {
+  const [hours, minutes, seconds] = timeString.split(':').map(Number);
+
+  if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) {
+    return null; // Invalid time format
+  }
+
+  const date = new Date();
+  date.setHours(hours, minutes, seconds, 0);
+  return date;
+}
+
+function addSecondsToTime(timeString, secondsToAdd) {
+  const [hours, minutes, seconds] = timeString.split(':').map(Number);
+
+  if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) {
+    return timeString; // Invalid time format
+  }
+
+  let totalSeconds = hours * 3600 + minutes * 60 + seconds + secondsToAdd;
+
+  let newHours = Math.floor(totalSeconds / 3600) % 24;
+  totalSeconds %= 3600;
+  let newMinutes = Math.floor(totalSeconds / 60);
+  let newSeconds = totalSeconds % 60;
+
+  return `${newHours < 10 ? '0' + newHours : newHours}:${newMinutes < 10 ? '0' + newMinutes : newMinutes}:${newSeconds < 10 ? '0' + newSeconds : newSeconds}`;
+}
 
 exports.get_csv_data_ById = async (req, res) => {
   try {
