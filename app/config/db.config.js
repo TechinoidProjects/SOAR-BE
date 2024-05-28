@@ -20,6 +20,7 @@ const config = {
     USER: process.env.CLIENT_DB_USERNAME,
     PASSWORD: process.env.CLIENT_DB_PASSWORD,
     DB: process.env.CLIENT_DB_NAME,
+    Port:process.env.CLIENT_DB_PORT,
     dialect: "postgres",
     pool: {
       max: 5,
