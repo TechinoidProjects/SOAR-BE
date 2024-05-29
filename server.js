@@ -22,10 +22,23 @@ const httpsPort = process.env.HTTPS_PORT;
 
 const app = express();
 
+const allowedOrigins = ['http://13.48.123.31', 'http://13.48.132.126'];
+
 const corsOptions = {
-  origin: 'http://13.48.123.31',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified origin.';
+      return callback(new Error(msg), false);
+    }
+
+    return callback(null, true);
+  },
   optionsSuccessStatus: 200
-}
+};
+
 app.use('/uploads', express.static(path.join(__dirname, 'app/uploads')));
 
 app.use(cors(corsOptions));
