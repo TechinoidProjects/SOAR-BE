@@ -86,7 +86,7 @@ exports.save_surgical_videos = async (req, res) => {
 };
 
 exports.search_surgical_videos = async (req, res) => {
-  const { procedure_type, surgeon, years_of_experience, durations, hospital, datePerformed, time_of_surgery,steps,errors,criterias,scores } = req.body;
+  const { procedure_type, surgeon, years_of_experience, durations, hospital, datePerformed, time_of_surgery, steps, errors, criterias, scores } = req.body;
   // Check if any filters are provided
   const isFiltered = procedure_type || surgeon || years_of_experience || durations || hospital || datePerformed || time_of_surgery || steps || errors || criterias || scores;
   if (!isFiltered) {
@@ -109,7 +109,7 @@ exports.search_surgical_videos = async (req, res) => {
           attributes: ['surgeon_name'] // Fetch surgeon name from SurgicalVideoDetail
         }
       ],
-      attributes: ['id','duration', 'time', 'video_url','procedure_type'], // Attributes from SurgicalVideo
+      attributes: ['id', 'duration', 'time', 'video_url', 'procedure_type'], // Attributes from SurgicalVideo
     });
 
     // Enhance response with video_title and filtered attributes
@@ -154,73 +154,40 @@ exports.search_surgical_videos = async (req, res) => {
   }
 };
 
-
 function processAnnotations(annotations, filterLabel = null) {
-  const uniqueAnnotations = new Map();
-
-  annotations.forEach(annotation => {
+  const processedAnnotations = annotations.map(annotation => {
     // If label_processed is null, set it to label
     if (!annotation.label_processed) {
       annotation.label_processed = annotation.label;
     }
     // Check if we should filter this label and if it matches the filter criteria
     if (filterLabel && annotation.label_processed === filterLabel) {
-      return; // Skip this annotation
+      return null; // Skip this annotation
     }
-    if (!uniqueAnnotations.has(annotation.label)) {
-      uniqueAnnotations.set(annotation.label, annotation);
-    }
-  });
+    return annotation;
+  }).filter(annotation => annotation !== null); // Remove null values
 
-  // Convert the map values back to an array
-  const processedAnnotations = Array.from(uniqueAnnotations.values());
-
-  processedAnnotations.forEach(annotation => {
-    const startTime = parseTime(annotation.start_time);
-    const endTime = parseTime(annotation.end_time);
-
-    // Check if startTime and endTime are valid dates
-    if (!startTime || !endTime) {
-      console.warn(`Invalid time format for annotation: ${JSON.stringify(annotation)}`);
-      return; // Skip this annotation
-    }
-
-    // Calculate duration in seconds
-    const duration = (endTime - startTime) / 1000;
-
-    // Check if duration is less than 10 seconds
-    if (duration < 10) {
-      // If less than 10 seconds, set duration to 10 seconds
-      annotation.end_time = addSecondsToTime(annotation.start_time, 10);
-    } else {
-      // If greater than or equal to 10 seconds, leave it as is
-      annotation.end_time = addSecondsToTime(annotation.start_time, duration);
-    }
-  });
-
+  if (filterLabel != null) {
+    processedAnnotations.forEach(annotation => {
+      // Subtract 10 seconds from start time
+      annotation.start_time = subtractSecondsFromTime(annotation.start_time, 10);
+    });
+  }
   return processedAnnotations;
 }
 
-function parseTime(timeString) {
-  const [hours, minutes, seconds] = timeString.split(':').map(Number);
-
-  if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) {
-    return null; // Invalid time format
-  }
-
-  const date = new Date();
-  date.setHours(hours, minutes, seconds, 0);
-  return date;
-}
-
-function addSecondsToTime(timeString, secondsToAdd) {
+function subtractSecondsFromTime(timeString, secondsToSubtract) {
   const [hours, minutes, seconds] = timeString.split(':').map(Number);
 
   if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) {
     return timeString; // Invalid time format
   }
 
-  let totalSeconds = hours * 3600 + minutes * 60 + seconds + secondsToAdd;
+  let totalSeconds = hours * 3600 + minutes * 60 + seconds - secondsToSubtract;
+
+  if (totalSeconds < 0) {
+    totalSeconds = 0; // Prevent negative time
+  }
 
   let newHours = Math.floor(totalSeconds / 3600) % 24;
   totalSeconds %= 3600;
@@ -255,7 +222,7 @@ exports.get_csv_data_ById = async (req, res) => {
           as: 'video_annotations',
         }
       ],
-      attributes: ['id', 'duration', 'time', 'video_url'],
+      attributes: ['id', 'duration', 'time', 'video_url','procedure_type'],
       where: { id: videoId }
     });
 
@@ -264,11 +231,11 @@ exports.get_csv_data_ById = async (req, res) => {
       const errors = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === 'errors'), "Instrument tip out of view");
       const competency = processAnnotations(video.video_annotations.filter(annotation => annotation.annotation_type === null));
 
-      const csv_data = [{competency: competency}, { steps: steps }, {errors: errors}];
+      const csv_data = [{ competency: competency }, { steps: steps }, { errors: errors }];
 
       return {
         id: video.id,
-        video_title: 'Cystoscopy Video',
+        video_title: video.procedure_type,
         institution_name: video?.user?.user_infos[0]?.institution_name,
         surgeon_name: video.surgical_videos_details.map(detail => detail.surgeon_name).join(', '),
         duration: video.duration,
@@ -288,10 +255,10 @@ exports.get_csv_data_ById = async (req, res) => {
 
 
 exports.search_surgical_videos_by_userId = async (req, res) => {
-  
+
   const userId = req.userId;
 
-  const { procedure_type, surgeon, years_of_experience, durations, hospital, datePerformed, time_of_surgery,steps,errors,criterias,scores } = req.body;
+  const { procedure_type, surgeon, years_of_experience, durations, hospital, datePerformed, time_of_surgery, steps, errors, criterias, scores } = req.body;
   // Check if any filters are provided
   const isFiltered = procedure_type || surgeon || years_of_experience || durations || hospital || datePerformed || time_of_surgery || steps || errors || criterias || scores;
   if (!isFiltered) {
@@ -314,13 +281,13 @@ exports.search_surgical_videos_by_userId = async (req, res) => {
           attributes: ['surgeon_name'] // Fetch surgeon name from SurgicalVideoDetail
         }
       ],
-      attributes: ['id','duration', 'time', 'video_url','procedure_type'], // Attributes from SurgicalVideo
+      attributes: ['id', 'duration', 'time', 'video_url', 'procedure_type'], // Attributes from SurgicalVideo
       where: { user_id: userId }
     });
 
     // Enhance response with video_title and filtered attributes
     const enhancedVideos = surgicalVideos.map(video => ({
-      user_id : userId,
+      user_id: userId,
       id: video.id,
       video_title: video?.procedure_type,
       institution_name: video?.user?.user_infos[0]?.institution_name, // Accessing first UserInfo
