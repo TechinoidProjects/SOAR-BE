@@ -9,7 +9,7 @@ const setupSwaggerDocs = require('./swaggerConfig');
 const path = require('path');
 
 // Use '0.0.0.0' to listen on all network interfaces
-const hostname = '0.0.0.0';
+const hostname = '13.48.123.31';
 const httpPort = process.env.HTTP_PORT;
 const httpsPort = process.env.HTTPS_PORT;
 
