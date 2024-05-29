@@ -23,7 +23,7 @@ const httpsPort = process.env.HTTPS_PORT;
 const app = express();
 
 const corsOptions = {
-  origin: 'http://localhost:3000',
+  origin: 'http://13.48.123.31',
   optionsSuccessStatus: 200
 }
 app.use('/uploads', express.static(path.join(__dirname, 'app/uploads')));
