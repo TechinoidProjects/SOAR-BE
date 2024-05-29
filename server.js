@@ -1,4 +1,3 @@
-
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
@@ -9,12 +8,12 @@ require('dotenv').config();
 const setupSwaggerDocs = require('./swaggerConfig');
 const path = require('path');
 
-
-const hostname = (process.env.NODE_ENV == 'development') ? process.env.DEVELOPMENT_HOST : process.env.CLIENT_HOST;
+// Use '0.0.0.0' to listen on all network interfaces
+const hostname = '0.0.0.0';
 const httpPort = process.env.HTTP_PORT;
 const httpsPort = process.env.HTTPS_PORT;
 
-// SSL Configration
+// SSL Configuration
 // const httpsOptions = {
 //   cert: fs.readFileSync('./ssl/falcon_messagepoint_tv.crt'),
 //   ca: fs.readFileSync('./ssl/falcon_messagepoint_tv.ca-bundle'),
@@ -30,20 +29,13 @@ const corsOptions = {
 app.use('/uploads', express.static(path.join(__dirname, 'app/uploads')));
 
 app.use(cors(corsOptions));
-//app.use(expressValidator())
 app.use(bodyParser.json());
 setupSwaggerDocs(app, httpPort);
-// parse requests of content-type - application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // database
 const db = require("./app/models");
 const Role = db.roles;
-
-
-//db.sequelize.sync();
 
 Role.findAll().then(function (res) {
   console.log('Role Exist')
@@ -62,13 +54,13 @@ const httpServer = http.createServer(app);
 // const httpsServer = https.createServer(httpsOptions, app);
 
 const server1 = httpServer.listen(httpPort, hostname, function () {
-  let host = server1.address().address
-  let port = server1.address().port
+  let host = server1.address().address;
+  let port = server1.address().port;
   console.log("App listening at http://%s:%s", host, port);
 });
 
 // const server = httpsServer.listen(httpsPort, hostname, function () {
-//    let host = server.address().address
-//    let port = server.address().port
+//    let host = server.address().address;
+//    let port = server.address().port;
 //    console.log("App listening at http://%s:%s", host, port);
-//  });
+// });
