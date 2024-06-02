@@ -115,7 +115,7 @@ exports.search_surgical_videos = async (req, res) => {
     // Enhance response with video_title and filtered attributes
     const enhancedVideos = surgicalVideos.map(video => ({
       id: video.id,
-      video_title: video?.procedure_type,
+      video_title: 'Lap chole',
       institution_name: video?.user?.user_infos[0]?.institution_name, // Accessing first UserInfo
       surgeon_name: video.surgical_videos_details.map(detail => detail.surgeon_name).join(', '), // Joining all surgeon names
       duration: video.duration,
@@ -235,7 +235,7 @@ exports.get_csv_data_ById = async (req, res) => {
 
       return {
         id: video.id,
-        video_title: video.procedure_type,
+        video_title: 'Lap chole',
         institution_name: video?.user?.user_infos[0]?.institution_name,
         surgeon_name: video.surgical_videos_details.map(detail => detail.surgeon_name).join(', '),
         duration: video.duration,
@@ -289,7 +289,7 @@ exports.search_surgical_videos_by_userId = async (req, res) => {
     const enhancedVideos = surgicalVideos.map(video => ({
       user_id: userId,
       id: video.id,
-      video_title: video?.procedure_type,
+      video_title: 'Lap chole',
       institution_name: video?.user?.user_infos[0]?.institution_name, // Accessing first UserInfo
       surgeon_name: video.surgical_videos_details.map(detail => detail.surgeon_name).join(', '), // Joining all surgeon names
       duration: video.duration,
