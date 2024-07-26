@@ -325,10 +325,16 @@ function processAnnotations(annotations, filterLabel = null) {
       if (!annotation.label_processed) {
         annotation.label_processed = annotation.label;
       }
-      // Check if we should filter this label and if it matches the filter criteria
-      if (filterLabel && annotation.label_processed === filterLabel) {
-        return null; // Skip this annotation
+      
+      if (!annotation.label_processed && annotation.label) {
+        annotation.label_processed = annotation.label;
       }
+
+      // Process label only if it's not null or undefined
+      if (annotation.label_processed) {
+        annotation.label_processed = processLabel(annotation.label_processed);
+      }
+
       return annotation;
     })
     .filter((annotation) => annotation !== null); // Remove null values
@@ -343,6 +349,18 @@ function processAnnotations(annotations, filterLabel = null) {
     });
   }
   return processedAnnotations;
+}
+
+function processLabel(label) {
+  // Remove numeric prefix with optional decimal points
+  label = label.replace(/^\d+(\.\d+)?/, '');
+  // Trim any leading or trailing spaces
+  label = label.trim();
+  // Insert spaces before capital letters and convert to lowercase
+  label = label.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+  // Capitalize the first letter of each word
+  label = label.replace(/\b\w/g, (c) => c.toUpperCase());
+  return label;
 }
 
 function subtractSecondsFromTime(timeString, secondsToSubtract) {
