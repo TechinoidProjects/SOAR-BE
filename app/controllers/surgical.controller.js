@@ -319,25 +319,32 @@ exports.search_surgical_videos = async (req, res) => {
 };
 
 function processAnnotations(annotations, filterLabel = null) {
-  const processedAnnotations = annotations
-    .map((annotation) => {
-      // If label_processed is null, set it to label
-      if (!annotation.label_processed) {
-        annotation.label_processed = annotation.label;
-      }
-      
-      if (!annotation.label_processed && annotation.label) {
-        annotation.label_processed = annotation.label;
-      }
+  const annotationMap = new Map();
 
-      // Process label only if it's not null or undefined
-      if (annotation.label_processed) {
-        annotation.label_processed = processLabel(annotation.label_processed);
-      }
+  annotations.forEach((annotation) => {
+    // If label_processed is null, set it to label
+    if (!annotation.label_processed && annotation.label) {
+      annotation.label_processed = annotation.label;
+    }
 
-      return annotation;
-    })
-    .filter((annotation) => annotation !== null); // Remove null values
+    // Process label only if it's not null or undefined
+    if (annotation.label_processed) {
+      annotation.label_processed = processLabel(annotation.label_processed);
+    }
+
+    // If there's an existing annotation with the same label_processed, merge it
+    if (annotationMap.has(annotation.label_processed)) {
+      const existingAnnotation = annotationMap.get(annotation.label_processed);
+      existingAnnotation.start_time = mergeStartTimes(
+        existingAnnotation.start_time,
+        annotation.start_time
+      );
+    } else {
+      annotationMap.set(annotation.label_processed, annotation);
+    }
+  });
+
+  const processedAnnotations = Array.from(annotationMap.values());
 
   if (filterLabel != null) {
     processedAnnotations.forEach((annotation) => {
@@ -348,6 +355,7 @@ function processAnnotations(annotations, filterLabel = null) {
       );
     });
   }
+
   return processedAnnotations;
 }
 
@@ -361,6 +369,11 @@ function processLabel(label) {
   // Capitalize the first letter of each word
   label = label.replace(/\b\w/g, (c) => c.toUpperCase());
   return label;
+}
+function mergeStartTimes(time1, time2) {
+  // This function can be adjusted to merge start times as needed.
+  // For simplicity, here it just returns the earlier of the two times.
+  return time1 < time2 ? time1 : time2;
 }
 
 function subtractSecondsFromTime(timeString, secondsToSubtract) {
